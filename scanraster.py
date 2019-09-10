@@ -73,4 +73,4 @@ nframes=framerate
 
 samples = islice(sampleimage, nframes)
 
-write_wavefile("".join([sys.argv[1],".wav"]), samples, nframes,nchannels,sampwidth,framerate)
+write_wavefile("".join([sys.argv[1],".scan.wav"]), samples, nframes,nchannels,sampwidth,framerate)

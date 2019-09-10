@@ -8,7 +8,41 @@ import argparse
 from itertools import *
 from PIL import Image
 
-# write_wavefile and write_pcm functions from https://zach.se/generate-audio-with-python/ 
+def ring_gen(width, height):
+    ring_coords = []
+    x = 0
+    y = 0
+    ring_coords.append((x,y))
+    mm = 'u'
+    u_l = height
+    r_l = width
+    d_l = -1
+    l_l = -1
+    while len(ring_coords) < width*height:
+        if mm == 'u' and y+1 >= u_l:
+            mm = 'r'
+            u_l = y
+        if mm == 'r' and x+1 >= r_l:
+            mm = 'd'
+            r_l = x
+        if mm == 'd' and y-1 <= d_l:
+            mm = 'l'
+            d_l = y
+        if mm == 'l' and x-1 <= l_l:
+            mm = 'u'
+            l_l = x
+        if mm == 'u':
+            y+=1
+        elif mm == 'r':
+            x+=1
+        elif mm == 'd':
+            y-=1
+        elif mm == 'l':
+            x-=1
+        ring_coords.append((x,y))
+    return ring_coords
+
+# grouper, write_wavefile and write_pcm functions from https://zach.se/generate-audio-with-python/ 
 
 def grouper(n, iterable, fillvalue=None):
     "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
@@ -55,17 +89,14 @@ divisor = float(max(im.size[0]/2, im.size[1]/2))
 xzero = im.size[0]/2
 yzero = im.size[1]/2
 values=[]
-for x in range(0, im.size[0]):
-    if x % 2 == 0:
-        yrange = range(0, im.size[1])
-    else:
-        yrange = range(im.size[1]-1,-1,-1)
-    for y in yrange:
-        if pix[x,y][3] == 255 and pix[x,y][0]+pix[x,y][1]+pix[x,y][2] <= int(sys.argv[2]):
-            values.append((float((x-xzero))/divisor,float(-(y-yzero))/divisor))
+rings = ring_gen(im.size[0],im.size[1])
+for coords in rings:
+    x = coords[0]
+    y = coords[1]
+    if pix[x,y][3] == 255 and pix[x,y][0]+pix[x,y][1]+pix[x,y][2] <= int(sys.argv[2]):
+        values.append((float((x-xzero))/divisor,float(-(y-yzero))/divisor))
 
 revvals = reversed(values)
-
 for v in revvals:
     values.append(v)
 
@@ -78,4 +109,4 @@ nframes=framerate
 
 samples = islice(sampleimage, nframes)
 
-write_wavefile("".join([sys.argv[1],".slow.wav"]), samples, nframes,nchannels,sampwidth,framerate)
+write_wavefile("".join([sys.argv[1],".ring.wav"]), samples, nframes,nchannels,sampwidth,framerate)
