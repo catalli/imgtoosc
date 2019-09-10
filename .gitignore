@@ -1,3 +1,6 @@
+# Swap
+*.swp
+
 # Input/output files
 *.png
 *.wav
