@@ -4,6 +4,7 @@
 # Input/output files
 *.png
 *.wav
+*.xcf
 
 # Venv
 bin/

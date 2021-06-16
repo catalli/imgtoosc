@@ -68,7 +68,7 @@ sampleimage = cycle(values)
 
 nchannels=2
 sampwidth=2
-framerate=len(values)*120
+framerate=len(values)*30
 nframes=framerate
 
 samples = islice(sampleimage, nframes)
