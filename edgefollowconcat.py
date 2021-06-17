@@ -50,14 +50,25 @@ def write_pcm(f, samples, sampwidth=2, framerate=44100, bufsize=2048):
 def selectnextpoint(cv_img, center_point, pathstepradius, threshold):
     pointToReturn = None
     pickedPoint = False
+    cornerchoice = random.randint(0,3)
     # search in a spiral converging on the center point
-    focuspoint = [center_point[0]-pathstepradius,center_point[1]-pathstepradius]
     xboundupper = center_point[0]+pathstepradius
     xboundlower = center_point[0]-pathstepradius
     yboundupper = center_point[1]+pathstepradius
     yboundlower = center_point[1]-pathstepradius
-    direction = 'xincrease'
-    nopoints = (2*pathstepradius)**2
+    if cornerchoice == 0:
+        focuspoint = [xboundlower,yboundlower]
+        direction = 'xincrease'
+    elif cornerchoice == 1:
+        focuspoint = [xboundupper,yboundlower]
+        direction = 'yincrease'
+    elif cornerchoice == 3:
+        focuspoint = [xboundupper,yboundlower]
+        direction = 'xdecrease'
+    else:
+        focuspoint = [xboundlower,yboundupper]
+        direction = 'ydecrease'
+    nopoints = (2*pathstepradius)**2-1
     while focuspoint != center_point and nopoints > 0:
         try:
             if cv_img[focuspoint[0],focuspoint[1]] <= threshold and (not pickedPoint) and (focuspoint[0] >=0 and focuspoint[1] >= 0):
@@ -66,44 +77,53 @@ def selectnextpoint(cv_img, center_point, pathstepradius, threshold):
                 break
         except:
             pass
-        nopoints-=1
         if direction == 'xincrease':
             if focuspoint[0]+1 > xboundupper:
                 direction = 'yincrease'
                 yboundlower+=1
             else:
                 focuspoint[0]+=1
+                nopoints-=1
         if direction == 'yincrease':
             if focuspoint[1]+1 > yboundupper:
                 direction = 'xdecrease'
                 xboundupper-=1
             else:
                 focuspoint[1]+=1
+                nopoints-=1
         if direction == 'xdecrease':
             if focuspoint[0]-1 < xboundlower:
                 direction = 'ydecrease'
                 yboundupper-=1
             else:
                 focuspoint[0]-=1
+                nopoints-=1
         if direction == 'ydecrease':
             if focuspoint[1]-1 < yboundlower:
                 direction = 'xincrease'
                 xboundlower+=1
+            else:
+                focuspoint[1]-=1
+                nopoints-=1
     if not pickedPoint:
         return None
     return pointToReturn
 
-def follow_path(cv_img, pathstepradius,pathlengthmax,threshold,patheraseradius):
+def follow_path(cv_img, pathstartpoint, searchradius, pathstepradius,pathlengthmax,threshold,patheraseradius):
     emptyImage = True
-    for i in range(cv_img.shape[0]):
-        for j in range(cv_img.shape[1]):
-            if cv_img[i,j] <= threshold:
-                emptyImage = False
-                startPoint = [i,j]
-                cv_img[startPoint[0],startPoint[1]]=255
+    startPoint = selectnextpoint(cv_img, pathstartpoint, searchradius, threshold)
+    if startPoint is None:
+        for i in range(cv_img.shape[0]):
+            for j in range(cv_img.shape[1]):
+                if cv_img[i,j] <= threshold:
+                    emptyImage = False
+                    startPoint = [i,j]
+                    cv_img[startPoint[0],startPoint[1]]=255
+                    break
+            if not emptyImage:
                 break
-        if not emptyImage:
-            break
+    else:
+        emptyImage = False
     if emptyImage:
         return []
     values = [startPoint]
@@ -125,7 +145,10 @@ def erasesquare(cv_img, centerpoint, eraseradius):
                     pass
 
 filename = sys.argv[1]
-threshold = 50
+threshold = 10
+throwawaythreshold = 0
+sort = True
+reverse = True
 try:
     pathstepradius = sys.argv[2]
 except:
@@ -133,23 +156,27 @@ except:
 try:
     patheraseradius = sys.argv[3]
 except:
-    patheraseradius = 5
+    patheraseradius = 2
 try:
     pathlengthmax = sys.argv[4]
 except:
-    pathlengthmax = 1024
+    pathlengthmax = 256
 try:
-    maxside = sys.argv[5]
+    newpathsearchradius = sys.argv[5]
+except:
+    newpathsearchradius = 10
+try:
+    maxside = sys.argv[6]
 except:
     maxside = 400
 try:
-    fps = sys.argv[6]
+    fps = sys.argv[7]
 except:
-    fps = 20
+    fps = 60
 try:
-    lengthseconds=sys.argv[7]
+    lengthseconds=sys.argv[8]
 except:
-    lengthseconds=40
+    lengthseconds=30
 
 img = cv2.imread(filename, cv2.IMREAD_UNCHANGED)
 trans_mask = img[:,:,3] == 0
@@ -165,19 +192,22 @@ img_gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
 paths = []
 cv2.namedWindow("image",0)
+pathStartPoint = [0,0]
 while True:
-    pathToAdd = follow_path(img_gray, pathstepradius, pathlengthmax, threshold,patheraseradius)
+    pathToAdd = follow_path(img_gray, pathStartPoint, newpathsearchradius, pathstepradius, pathlengthmax, threshold,patheraseradius)
     cv2.imshow("image", img_gray)
     cv2.waitKey(1)
     if pathToAdd == []:
         break
     else:
         paths.append(pathToAdd)
+        pathStartPoint = pathToAdd[-1]
 
 cv2.destroyAllWindows()
 
 print(len(paths))
-paths.sort(key = lambda x: len(x),reverse=True)
+if sort:
+    paths.sort(key = lambda x: len(x),reverse=reverse)
 print(len(paths[0]))
 print(len(paths[-1]))
 print(paths[0])
@@ -192,6 +222,8 @@ masterwaveform = []
 # generate waveform from paths here
 ## concatenate paths
 for path in paths:
+    if len(path) <= throwawaythreshold:
+        continue
     for point in path:
         normpoint = (float(point[1]-yzero)/divisor,-float(point[0]-xzero)/divisor)
         masterwaveform.append(normpoint)

@@ -57,7 +57,7 @@ def selectnextpoint(cv_img, center_point, pathstepradius, threshold):
     yboundupper = center_point[1]+pathstepradius
     yboundlower = center_point[1]-pathstepradius
     direction = 'xincrease'
-    nopoints = (2*pathstepradius)**2
+    nopoints = (2*pathstepradius)**2-1
     while focuspoint != center_point and nopoints > 0:
         try:
             if cv_img[focuspoint[0],focuspoint[1]] <= threshold and (not pickedPoint) and (focuspoint[0] >=0 and focuspoint[1] >= 0):
@@ -66,29 +66,34 @@ def selectnextpoint(cv_img, center_point, pathstepradius, threshold):
                 break
         except:
             pass
-        nopoints-=1
         if direction == 'xincrease':
             if focuspoint[0]+1 > xboundupper:
                 direction = 'yincrease'
                 yboundlower+=1
             else:
                 focuspoint[0]+=1
+                nopoints-=1
         if direction == 'yincrease':
             if focuspoint[1]+1 > yboundupper:
                 direction = 'xdecrease'
                 xboundupper-=1
             else:
                 focuspoint[1]+=1
+                nopoints-=1
         if direction == 'xdecrease':
             if focuspoint[0]-1 < xboundlower:
                 direction = 'ydecrease'
                 yboundupper-=1
             else:
                 focuspoint[0]-=1
+                nopoints-=1
         if direction == 'ydecrease':
             if focuspoint[1]-1 < yboundlower:
                 direction = 'xincrease'
                 xboundlower+=1
+            else:
+                focuspoint[1]-=1
+                nopoints-=1
     if not pickedPoint:
         return None
     return pointToReturn
@@ -129,11 +134,11 @@ threshold = 50
 try:
     pathstepradius = sys.argv[2]
 except:
-    pathstepradius = 20
+    pathstepradius = 5
 try:
     patheraseradius = sys.argv[3]
 except:
-    patheraseradius = 10
+    patheraseradius = 5
 try:
     pathlengthmax = sys.argv[4]
 except:
@@ -141,11 +146,11 @@ except:
 try:
     maxside = sys.argv[5]
 except:
-    maxside = 512
+    maxside = 400
 try:
     fps = sys.argv[6]
 except:
-    fps = 30
+    fps = 1
 try:
     lengthseconds=sys.argv[7]
 except:
