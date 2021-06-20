@@ -150,7 +150,7 @@ except:
 try:
     fps = sys.argv[6]
 except:
-    fps = 1
+    fps = 60
 try:
     lengthseconds=sys.argv[7]
 except:
@@ -188,7 +188,7 @@ print(len(paths[-1]))
 print(paths[0])
 print(paths[-1])
 
-divisor = float(max(img_gray.shape[0],img_gray.shape[1]))
+divisor = float(max(img_gray.shape[0],img_gray.shape[1]))/2
 xzero = img_gray.shape[0]/2
 yzero = img_gray.shape[1]/2
 

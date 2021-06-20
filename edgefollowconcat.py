@@ -147,7 +147,7 @@ def erasesquare(cv_img, centerpoint, eraseradius):
 filename = sys.argv[1]
 threshold = 10
 throwawaythreshold = 0
-sort = True
+sort = False
 reverse = True
 try:
     pathstepradius = sys.argv[2]
@@ -156,7 +156,7 @@ except:
 try:
     patheraseradius = sys.argv[3]
 except:
-    patheraseradius = 2
+    patheraseradius = 4
 try:
     pathlengthmax = sys.argv[4]
 except:
@@ -164,7 +164,7 @@ except:
 try:
     newpathsearchradius = sys.argv[5]
 except:
-    newpathsearchradius = 10
+    newpathsearchradius = 20
 try:
     maxside = sys.argv[6]
 except:
@@ -172,7 +172,7 @@ except:
 try:
     fps = sys.argv[7]
 except:
-    fps = 60
+    fps = 1
 try:
     lengthseconds=sys.argv[8]
 except:
@@ -213,7 +213,7 @@ print(len(paths[-1]))
 print(paths[0])
 print(paths[-1])
 
-divisor = float(max(img_gray.shape[0],img_gray.shape[1]))
+divisor = float(max(img_gray.shape[0],img_gray.shape[1]))/2
 xzero = img_gray.shape[0]/2
 yzero = img_gray.shape[1]/2
 
